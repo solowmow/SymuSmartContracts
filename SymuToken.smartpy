@@ -1,0 +1,67 @@
+import smartpy as sp
+
+class SymuToken(sp.Contract):
+    def __init__(self, admin, initialSupply):
+        self.init(
+            admin = admin,
+            totalSupply = initialSupply,
+            balances = {admin: initialSupply},
+            allowances = sp.bigmap()
+        )
+
+    @sp.entry_point
+    def transfer(self, params):
+        sender = sp.sender
+        recipient = params.target
+        amount = params.amount
+
+        sp.verify(self.data.balances[sender] >= amount)
+        self.data.balances[sender] -= amount
+        self.data.balances[recipient] = self.data.balances.get(recipient, 0) + amount
+
+    @sp.entry_point
+    def approve(self, params):
+        spender = params.spender
+        amount = params.amount
+        owner = sp.sender
+
+        self.data.allowances[owner][spender] = amount
+
+    @sp.entry_point
+    def transferFrom(self, params):
+        sender = params.sender
+        recipient = params.recipient
+        amount = params.amount
+
+        sp.verify(self.data.allowances[sender][sp.sender] >= amount)
+        sp.verify(self.data.balances[sender] >= amount)
+
+        self.data.allowances[sender][sp.sender] -= amount
+        self.data.balances[sender] -= amount
+        self.data.balances[recipient] = self.data.balances.get(recipient, 0) + amount
+
+    @sp.entry_point
+    def increaseAllowance(self, params):
+        spender = params.spender
+        addedValue = params.addedValue
+        owner = sp.sender
+
+        self.data.allowances[owner][spender] += addedValue
+
+    @sp.entry_point
+    def decreaseAllowance(self, params):
+        spender = params.spender
+        subtractedValue = params.subtractedValue
+        owner = sp.sender
+
+        allowance = self.data.allowances[owner][spender]
+        sp.verify(allowance >= subtractedValue)
+
+        self.data.allowances[owner][spender] -= subtractedValue
+
+# Initialize contract and test parameters
+admin_address = sp.address("tz1...")
+initial_supply = 10000
+
+# Deploy the contract
+contract = SymuToken(admin=admin_address, initialSupply=initial_supply)
