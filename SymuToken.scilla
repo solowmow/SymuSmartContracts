@@ -1,0 +1,112 @@
+(*
+ * SymuToken.scilla
+ * Symu Token with Advanced Structures
+ *)
+
+contract SymuToken {
+
+    (* Scilla Standard Library import *)
+    import ListUtils
+
+    (* Token details *)
+    let tokenName = "SymuToken"
+    let tokenSymbol = "SYM"
+    let tokenDecimals = Uint32 18
+
+    (* Mutable field for the total token supply *)
+    var totalSupply = Uint128 0
+
+    (* Mutable mapping to track balances *)
+    mapping (ByStr20) (Uint128) balances
+
+    (* Access control variables *)
+    let admin = ByStr20 0xAdminAddress
+    let owner = ByStr20 0xOwnerAddress
+
+    (* Events *)
+    event TransferEvent(from: ByStr20, to: ByStr20, amount: Uint128)
+    event ApprovalEvent(owner: ByStr20, spender: ByStr20, amount: Uint128)
+
+    (* Modifiers for access control *)
+    transition isAdmin(msg: Message) = {
+        match msg.sender with
+        | sender =>
+            match sender == admin || sender == owner with
+            | True => 
+                eprintln("Admin or owner access.")
+            | False =>
+                eprintln("Not authorized.")
+                throw
+    }
+
+    (* Function to check ownership *)
+    function isOwner(addr: ByStr20) : Bool = {
+        let isAdmin = addr == admin
+        let isOwner = addr == owner
+        match isAdmin || isOwner with
+        | True => True
+        | False => False
+    }
+
+    (* Functions for token transfers *)
+    transition transfer(from: ByStr20, to: ByStr20, amount: Uint128)
+    isOwner(from)
+    =
+    let senderBalance = 
+        builtin dip { 
+            balances[from]
+        } in
+    let recipientBalance = 
+        builtin dip { 
+            balances[to]
+        } in
+    let newSenderBalance = Uint128 (senderBalance - amount) in
+    let newRecipientBalance = Uint128 (recipientBalance + amount) in
+    let _ = 
+        builtin put (balances[to] <- newRecipientBalance) in
+    let _ = 
+        builtin put (balances[from] <- newSenderBalance) in
+    eprintln("Transfer completed.")
+    eprintln("From: " @ from)
+    eprintln("To: " @ to)
+    eprintln("Amount: " @ amount)
+    eprintln("Sender Balance: " @ newSenderBalance)
+    eprintln("Recipient Balance: " @ newRecipientBalance)
+    eprintln("=====================")
+    event TransferEvent(from, to, amount)
+
+    (* Functions for approvals *)
+    transition approve(owner: ByStr20, spender: ByStr20, amount: Uint128)
+    isOwner(owner)
+    =
+    eprintln("Approval granted.")
+    eprintln("Owner: " @ owner)
+    eprintln("Spender: " @ spender)
+    eprintln("Amount: " @ amount)
+    eprintln("=====================")
+    event ApprovalEvent(owner, spender, amount)
+
+    (* Functions for minting tokens *)
+    transition mint(amount: Uint128)
+    isAdmin
+    = 
+    totalSupply := totalSupply + amount
+    balances[owner] := balances[owner] + amount
+    eprintln("Tokens minted.")
+    eprintln("Owner: " @ owner)
+    eprintln("Amount: " @ amount)
+    eprintln("=====================")
+
+    (* Functions for burning tokens *)
+    transition burn(amount: Uint128)
+    isAdmin
+    =
+    let newTotalSupply = Uint128 (totalSupply - amount) in
+    let newOwnerBalance = Uint128 (balances[owner] - amount) in
+    totalSupply := newTotalSupply
+    balances[owner] := newOwnerBalance
+    eprintln("Tokens burned.")
+    eprintln("Owner: " @ owner)
+    eprintln("Amount: " @ amount)
+    eprintln("=====================")
+}
