@@ -1,0 +1,20 @@
+contract Crowdfunding =
+    record campaign = {
+        initiator : address,
+        target_amount : int,
+        current_amount : int,
+        // Other campaign details
+    }
+    
+    // Define storage for campaigns
+    stateful entrypoint createCampaign(target_amount : int) : int =
+        let new_campaign = { initiator = Call.caller, target_amount = target_amount, current_amount = 0 }
+        // Store campaign details, return campaign ID
+        0 // Replace with actual campaign ID returned
+    
+    stateful entrypoint contributeToCampaign(campaign_id : int, amount : int) =
+        require(amount > 0, "Contribution amount must be positive")
+        // Update campaign's current amount, handle contributor logic
+        true // Return success
+
+    // Define more functions like getCampaignDetails, finalizeCampaign, etc.
