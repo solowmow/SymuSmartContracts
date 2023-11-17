@@ -1,0 +1,76 @@
+// SymuToken Contract - Hopper
+
+// Import necessary libraries or modules (if applicable)
+
+// Define the SymuToken contract
+contract SymuToken {
+    // State variables
+    string public name;
+    string public symbol;
+    uint8 public decimals;
+    uint256 public totalSupply;
+    address public owner;
+    
+    // Mapping to track balances
+    mapping(address => uint256) balances;
+    
+    // Events for token transfer and approval
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+    
+    // Constructor to initialize the contract state
+    constructor(string memory _name, string memory _symbol, uint8 _decimals, uint256 _initialSupply) {
+        name = _name;
+        symbol = _symbol;
+        decimals = _decimals;
+        totalSupply = _initialSupply * (10 ** uint256(decimals));
+        owner = msg.sender;
+        balances[owner] = totalSupply;
+    }
+    
+    // Function to get the balance of an account
+    function balanceOf(address account) public view returns (uint256) {
+        return balances[account];
+    }
+    
+    // Function to transfer tokens
+    function transfer(address recipient, uint256 amount) public returns (bool) {
+        require(recipient != address(0), "HPR: transfer to the zero address");
+        require(amount <= balances[msg.sender], "HPR: transfer amount exceeds balance");
+        
+        balances[msg.sender] -= amount;
+        balances[recipient] += amount;
+        
+        emit Transfer(msg.sender, recipient, amount);
+        return true;
+    }
+    
+    // Function to approve token transfer
+    function approve(address spender, uint256 amount) public returns (bool) {
+        allowances[msg.sender][spender] = amount;
+        emit Approval(msg.sender, spender, amount);
+        return true;
+    }
+    
+    // Function to transfer tokens from one account to another
+    function transferFrom(address sender, address recipient, uint256 amount) public returns (bool) {
+        require(recipient != address(0), "HPR: transfer to the zero address");
+        require(amount <= balances[sender], "HPR: transfer amount exceeds balance");
+        require(amount <= allowances[sender][msg.sender], "HPR: transfer amount exceeds allowance");
+        
+        balances[sender] -= amount;
+        balances[recipient] += amount;
+        allowances[sender][msg.sender] -= amount;
+        
+        emit Transfer(sender, recipient, amount);
+        return true;
+    }
+    
+    // Other advanced tokenomics or governance functionalities can be added here
+    
+    // Modifier to restrict access to certain functions
+    modifier onlyOwner() {
+        require(msg.sender == owner, "HPR: Only the owner can call this function.");
+        _;
+    }
+}
