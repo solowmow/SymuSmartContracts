@@ -1,0 +1,14 @@
+contract SupplyChain =
+    record product = {
+        id : int,
+        name : string,
+        // Other product details
+    }
+    
+    // Define storage for products
+    stateful entrypoint createProduct(name : string) : int =
+        let new_product = { id = 0, name = name } // Generate product ID
+        // Store product details, return product ID
+        0 // Replace with actual product ID returned
+    
+    // Define more functions like getProductDetails, updateProduct, etc.
