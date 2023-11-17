@@ -1,0 +1,63 @@
+# Serpent no longer actively supported or recommended
+
+# Example representation of an enhanced token contract using Serpent (for educational purposes only)
+
+admins = {address1, address2}  # Addresses with admin privileges
+owners = {msg.sender}
+
+events Transfer(from, to, value)
+events Approval(owner, spender, value)
+events Minting(account, amount)
+events Burning(account, amount)
+
+def balances(addr: address) -> num: 
+    pass
+
+def allowances(addr: address) -> {num[num]}:
+    pass
+
+def totalSupply() -> num: 
+    pass
+
+def balanceOf(owner: address) -> num:
+    return self.balances[owner]
+
+def transfer(to: address, value: num) -> bool:
+    if self.balances[msg.sender] >= value:
+        self.balances[msg.sender] -= value
+        self.balances[to] += value
+        log.Transfer(msg.sender, to, value)
+        return 1
+    else:
+        return 0
+
+def transferFrom(from: address, to: address, value: num) -> bool:
+    if self.allowances[from][msg.sender] >= value and self.balances[from] >= value:
+        self.balances[from] -= value
+        self.balances[to] += value
+        self.allowances[from][msg.sender] -= value
+        log.Transfer(from, to, value)
+        return 1
+    else:
+        return 0
+
+def approve(spender: address, value: num) -> bool:
+    self.allowances[msg.sender][spender] = value
+    log.Approval(msg.sender, spender, value)
+    return 1
+
+def mint(account: address, amount: num) -> bool:
+    if msg.sender in admins:
+        self.balances[account] += amount
+        log.Minting(account, amount)
+        return 1
+    else:
+        return 0
+
+def burn(account: address, amount: num) -> bool:
+    if msg.sender in admins and self.balances[account] >= amount:
+        self.balances[account] -= amount
+        log.Burning(account, amount)
+        return 1
+    else:
+        return 0
