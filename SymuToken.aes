@@ -1,0 +1,25 @@
+contract SymuToken =
+    record state = {
+        owner_address : address,
+        total_supply : int,
+        balances : map(address, int)
+        // Add more state variables if needed
+    }
+    
+    function init() =
+        { owner_address = Call.caller,
+          total_supply = 1000000,
+          balances = { [Call.caller] = 1000000 } // Initial token distribution to the owner
+          // Initialize other variables or setup if needed
+        }
+
+    public function transfer(recipient : address, amount : int) =
+        require(amount >= 0, "Amount cannot be negative")
+        require(balances[Call.caller] >= amount, "Insufficient balance")
+        require(Call.value == 0, "Cannot send value")
+        
+        put(state{ balances[Call.caller] -= amount })
+        put(state{ balances[recipient] += amount })
+        true
+
+    // Add more functions such as allowance, balanceOf, etc., as required
