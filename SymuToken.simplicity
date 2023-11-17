@@ -1,0 +1,54 @@
+-- SymuToken.simplicity
+
+-- Define state variables
+field admin : pubkey
+field totalSupply : int
+field balances : map(pubkey, int)
+field roles : map(pubkey, bytes)
+
+-- Access Control: Assign roles to specific users (admin, owner, etc.)
+macro assignRole(key: pubkey, role: bytes) : ()
+    verify checkSig(key)
+    verify valid(role)
+    roles[key] = role
+end
+
+-- Token Standards: Implement basic ERC-20-like functionalities
+macro transfer(sender: pubkey, receiver: pubkey, amount: int) : ()
+    verify checkSig(sender)
+    verify amount > 0 && balances[sender] >= amount
+    balances[sender] = balances[sender] - amount
+    balances[receiver] = balances[receiver] + amount
+end
+
+-- Emit an event for token transfers
+macro emitTransfer(sender: pubkey, receiver: pubkey, amount: int) : ()
+    verify checkSig(sender)
+    verify amount > 0 && balances[sender] >= amount
+    balances[sender] = balances[sender] - amount
+    balances[receiver] = balances[receiver] + amount
+    commit
+end
+
+-- Security Considerations: Basic checks to prevent underflows and overflows
+macro safeTransfer(sender: pubkey, receiver: pubkey, amount: int) : ()
+    verify checkSig(sender)
+    verify amount > 0 && balances[sender] >= amount && balances[receiver] + amount >= balances[receiver]
+    balances[sender] = balances[sender] - amount
+    balances[receiver] = balances[receiver] + amount
+end
+
+-- Token Minting/Burning: Functions to create or destroy tokens
+macro mint(receiver: pubkey, amount: int) : ()
+    verify roles[msg] == 'admin'  -- Only admin can mint
+    verify amount > 0
+    totalSupply = totalSupply + amount
+    balances[receiver] = balances[receiver] + amount
+end
+
+macro burn(sender: pubkey, amount: int) : ()
+    verify checkSig(sender)
+    verify amount > 0 && balances[sender] >= amount
+    totalSupply = totalSupply - amount
+    balances[sender] = balances[sender] - amount
+end
