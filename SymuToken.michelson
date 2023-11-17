@@ -1,0 +1,88 @@
+parameter (or
+  (or :transfer (pair :from :to :value))
+  (or :approve (pair :spender :amount))
+);
+
+storage (pair
+  (big_map address nat)
+  (big_map (pair address address) nat)
+);
+
+code {
+  CAR ; Extract the parameter
+  
+  # Check if it's a transfer operation
+  IF_LEFT {
+    UNPAIR ; Unpack the transfer parameters
+    SWAP ; Place 'to' on top
+    DUP ; Duplicate 'to' for later use
+    CAR ; Extract 'from'
+    DIP { CDR } ; Get the storage
+    DUP ; Duplicate storage
+    DUG 2 ; Place 'from' at the top
+    CAR ; Get 'balances' big_map
+    DUP ; Duplicate 'balances' big_map
+    
+    # Get 'from' balance
+    DIP { SWAP } ; Swap 'from' and 'balances' for 'from' lookup
+    GET ; Get 'from' balance
+    IF_NONE { PUSH nat 0 } {} ; If none, set to 0
+    
+    # Check if balance covers the transfer amount
+    DUP ; Duplicate 'from' balance
+    DIP { UNPAIR ; Unpack 'value' }
+    COMPARE
+    GT ; Check if 'from' balance > 'value'
+    IF { } { FAIL } ; Fail if insufficient balance
+    
+    SUB ; Subtract 'value' from 'from' balance
+    SWAP ; Swap 'to' to top of the stack
+    DIP { DUP ; Duplicate 'balances' }
+    SWAP ; Place 'from' on top
+    DIP { CAR ; Get 'to' balance }
+    DUP ; Duplicate 'to' balance
+    
+    # Add 'value' to 'to' balance
+    DIP { UNPAIR ; Unpack 'value' }
+    ADD ; Add 'value' to 'to' balance
+    
+    DIP { SWAP ; Swap 'to' and 'balances' }
+    SWAP ; Place 'from' on top
+    SWAP ; Place 'balances' under 'from'
+    UPDATE ; Update 'balances'
+    
+    SWAP ; Place 'from' under 'from' balance
+    CAR ; Get 'allowances' big_map
+    DIP { CAR ; Get 'from' }
+    DIP { CDR } ; Get 'to'
+    DUP ; Duplicate 'to' for allowances lookup
+    
+    # Get allowance for 'from' to 'to'
+    GET ; Get allowance
+    IF_NONE { PUSH nat 0 } {} ; If none, set to 0
+    
+    DIP { UNPAIR ; Unpack 'value' }
+    
+    # Check if allowance covers the transfer amount
+    DUP ; Duplicate allowance
+    COMPARE
+    GT ; Check if allowance > 'value'
+    IF { } { FAIL } ; Fail if insufficient allowance
+    
+    SUB ; Subtract 'value' from allowance
+    DIP { DUP ; Duplicate 'allowances' }
+    SWAP ; Place 'from' on top
+    SWAP ; Place 'allowances' under 'from'
+    UPDATE ; Update 'allowances'
+    
+    NIL operation ; End of transfer operation
+    
+  } {
+    # Implement approval logic
+    # Not fully implemented in this example
+    DROP ; Drop parameter
+    DROP ; Drop storage
+    PUSH string "Approval logic not implemented" ; Error message
+    FAILWITH ; Fail with error message
+  }
+};
