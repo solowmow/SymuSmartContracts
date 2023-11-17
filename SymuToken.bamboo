@@ -1,0 +1,84 @@
+// SymuToken - Bamboo Contract with Advanced Features
+
+// Access Controls - Roles and permissions
+pub contract SymuToken:
+
+    // Define roles and permissions
+    pub resource owner = 0x01
+    pub resource admin = 0x02
+
+    // Event for token transfers
+    pub event Transfer(sender: address, receiver: address, amount: UInt64)
+
+    // Token Details
+    pub let name: String
+    pub let symbol: String
+    pub var totalSupply: UInt64
+
+    // Balances mapping
+    pub var balances: {address: UInt64}
+
+    // Mappings for approvals
+    pub var approvals: {address: {address: UInt64}}
+
+    // Constructor - Initialize token details
+    init(name: String, symbol: String, initialSupply: UInt64) {
+        self.name = name
+        self.symbol = symbol
+        self.totalSupply = initialSupply
+        self.balances = {getAccount(): initialSupply}
+        self.approvals = {}
+    }
+
+    // Function to get account address
+    fun getAccount(): address {
+        return getTransaction().sender
+    }
+
+    // Function to transfer tokens
+    pub fun transfer(to: address, amount: UInt64) {
+        let sender = getAccount()
+        pre {
+            self.balances[sender] >= amount: "Insufficient balance"
+        }
+        self.balances[sender] -= amount
+        self.balances[to] += amount
+        emit Transfer(sender, to, amount)
+    }
+
+    // Function to approve token transfer
+    pub fun approve(spender: address, amount: UInt64) {
+        self.approvals[getAccount()][spender] = amount
+    }
+
+    // Function to transfer tokens from one address to another
+    pub fun transferFrom(from: address, to: address, amount: UInt64) {
+        pre {
+            self.approvals[from][to] >= amount: "Approval required for this amount"
+        }
+        self.balances[from] -= amount
+        self.balances[to] += amount
+        self.approvals[from][to] -= amount
+        emit Transfer(from, to, amount)
+    }
+
+    // Function to mint new tokens (only accessible by the owner)
+    pub fun mint(account: address, amount: UInt64) {
+        pre {
+            account == owner: "Only the owner can mint tokens"
+        }
+        self.totalSupply += amount
+        self.balances[account] += amount
+        emit Transfer(Address.zero(), account, amount)
+    }
+
+    // Function to burn tokens
+    pub fun burn(amount: UInt64) {
+        let account = getAccount()
+        pre {
+            self.balances[account] >= amount: "Insufficient balance to burn"
+        }
+        self.balances[account] -= amount
+        self.totalSupply -= amount
+        emit Transfer(account, Address.zero(), amount)
+    }
