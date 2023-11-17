@@ -1,0 +1,50 @@
+module SymuToken where
+
+-- Import required DAML libraries
+import DA.Next.Set as Set
+import DA.Next.Map as Map
+import DA.Next.List as List
+
+-- Define the SymuToken contract
+template SymuToken
+  with
+    issuer : Party
+    symbol : Text
+    totalSupply : Decimal
+  where
+    -- Token data structure
+    signatory issuer
+    controller issuer
+    nonconsuming choice Issue : ContractId SymuToken
+      with
+        newTotalSupply : Decimal
+      controller issuer
+      do
+        create this with totalSupply = newTotalSupply
+
+    nonconsuming choice Transfer : ContractId SymuToken
+      with
+        receiver : Party
+        amount : Decimal
+      controller receiver
+      do
+        -- Ensure sufficient balance
+        assert (totalSupply >= amount)
+        create this with totalSupply = totalSupply - amount
+
+    nonconsuming choice Burn : ContractId SymuToken
+      with
+        amount : Decimal
+      controller issuer
+      do
+        -- Burn tokens
+        assert (totalSupply >= amount)
+        create this with totalSupply = totalSupply - amount
+
+    nonconsuming choice Mint : ContractId SymuToken
+      with
+        amount : Decimal
+      controller issuer
+      do
+        -- Mint new tokens
+        create this with totalSupply = totalSupply + amount
