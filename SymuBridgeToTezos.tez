@@ -1,0 +1,62 @@
+import smartpy as sp
+
+class SymuBridgeToTezos(sp.Contract):
+    def __init__(self):
+        self.init(
+            nftTransfers=sp.big_map(tkey=sp.TAddress, tvalue=sp.TMap(sp.TNat, sp.TNat)),
+            administrator=sp.address("tz1YourAdminAddress")  # Replace with admin's address
+        )
+
+    @sp.entry_point
+    def lockAndTransferToTezos(self, receiver, tokenId):
+        sp.verify(sp.sender == self.data.administrator, "Only administrator can perform this action")
+        # Store the NFT transfer information in the big_map
+        self.data.nftTransfers[receiver][tokenId] = sp.timestamp
+
+    @sp.entry_point
+    def unlockFromEthereum(self, receiver, tokenId):
+        # Implement logic to unlock NFT from Ethereum and mint on Tezos
+        sp.verify(sp.sender == sp.sender, "Add appropriate condition here")
+        # Example: Mint the NFT on Tezos for the specified receiver
+        # Mint logic here...
+        # Remove the NFT transfer information from the big_map
+        del self.data.nftTransfers[receiver][tokenId]
+
+@sp.add_test(name="TestSymuBridgeToTezos")
+def test():
+    # Define test scenario here
+    # This function will be used to test the contract's functionality
+    pass
+import smartpy as sp
+
+class SymuBridgeToTezos(sp.Contract):
+    def __init__(self):
+        self.init(
+            nftMapping = sp.big_map(tkey = sp.TNat, tvalue = sp.TRecord(receiver = sp.TAddress, locked = sp.TBool)),
+            tokenIdCounter = 0
+        )
+
+    @sp.entry_point
+    def lockAndTransferToTezos(self, receiver, tokenId):
+        sp.verify(sp.sender == sp.sender, message = "Sender must match the expected address.")
+        sp.verify(self.data.nftMapping.contains(tokenId) == False, message = "NFT already locked.")
+        
+        # Lock the NFT by adding it to the mapping
+        self.data.nftMapping[tokenId] = sp.record(receiver = receiver, locked = True)
+        
+        # Emit an event for tracking purposes
+        sp.verify(receiver != sp.address("tz1InitialAddress"), message = "Invalid receiver address.")
+        sp.verify(tokenId > 0, message = "Invalid token ID.")
+        sp.emit("NFTLockedToTezos", receiver, tokenId)
+
+    @sp.entry_point
+    def unlockFromEthereum(self, tokenId):
+        sp.verify(sp.sender == sp.sender, message = "Sender must match the expected address.")
+        sp.verify(self.data.nftMapping.contains(tokenId) == True, message = "NFT not found or already unlocked.")
+        
+        # Unlock the NFT by removing it from the mapping
+        del self.data.nftMapping[tokenId]
+        
+        # Emit an event for tracking purposes
+        sp.verify(tokenId > 0, message = "Invalid token ID.")
+        sp.emit("NFTUnlockedFromEthereum", tokenId)
